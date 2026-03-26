@@ -1,13 +1,43 @@
-import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
-import { app } from "../firebase";
+import { GoogleGenAI } from "@google/genai";
 
-const ai = getAI(app, { backend: new GoogleAIBackend() });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
-const model = getGenerativeModel(ai, {
-  model: "gemini-3-flash-preview",
-});
+const extractTextFromResponse = async (response) => {
+  if (!response) {
+    return "";
+  }
 
-const FUNCTIONS_BASE_URL = (import.meta.env.VITE_FUNCTIONS_URL || "https://us-central1-contractlens-tethered.cloudfunctions.net").replace(/\/$/, "");
+  if (typeof response.text === "function") {
+    return await response.text();
+  }
+
+  if (typeof response.text === "string") {
+    return response.text;
+  }
+
+  const root = response?.response ?? response;
+  const parts = root?.candidates?.[0]?.content?.parts || [];
+  return parts.map((part) => part.text || "").join("");
+};
+
+const parseJsonFromText = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "object") {
+    return value;
+  }
+
+  const withoutFences = String(value).replace(/```json|```/g, "").trim();
+  const firstBrace = withoutFences.indexOf("{");
+  const lastBrace = withoutFences.lastIndexOf("}");
+  const jsonString =
+    firstBrace !== -1 && lastBrace !== -1
+      ? withoutFences.slice(firstBrace, lastBrace + 1)
+      : withoutFences;
+  return JSON.parse(jsonString);
+};
 
 // 🔥 Reusable function
 export async function analyzeContract(contractText, sector = "General") {
@@ -55,71 +85,24 @@ Now analyze this contract:
 ${contractText}
 `;
 
+
   try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const response = await ai.models.generateContent({
+      // model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash-lite-preview",
+      contents: prompt,
+    });
 
-    // 🔥 Try parsing JSON safely
-    const cleaned = text.replace(/```json|```/g, "").trim();
+    const text = await extractTextFromResponse(response);
+    const parsed = parseJsonFromText(text);
+    if (parsed && typeof parsed === "object") {
+      return parsed;
+    }
 
-    console.log("AI Raw Response:", text);
-    console.log("AI Cleaned Response:", cleaned);
-    return JSON.parse(cleaned);
+    return { error: "Failed to parse analysis JSON" };
+    
   } catch (error) {
     console.error("AI Error:", error);
     return { error: "Failed to analyze contract" };
-  }
-}
-
-export async function suggestRecommendations(contractText, analysisResult, sector = "General") {
-  const prompt = `
-You are a legal assistant AI. The contract analysis is already completed.
-
-Your task is to provide:
-1. Practical recommendations for the user based on the analysis.
-2. Safer or fairer alternatives the user can request or choose instead.
-
-IMPORTANT RULES:
-- Use simple English
-- Be concise and actionable
-- Do NOT hallucinate or invent clauses not supported by the analysis
-- Keep recommendations realistic for the sector
-
-OUTPUT FORMAT (STRICT JSON):
-{
-  "recommendations": [
-    {
-      "title": "",
-      "why": ""
-    }
-  ],
-  "alternatives": [
-    {
-      "option": "",
-      "why": ""
-    }
-  ]
-}
-
-Sector: ${sector}
-
-Contract (excerpt/summary for context):
-${contractText}
-
-Analysis JSON:
-${JSON.stringify(analysisResult)}
-`;
-
-  try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const cleaned = text.replace(/```json|```/g, "").trim();
-
-    console.log("Recommendations Raw Response:", text);
-    console.log("Recommendations Cleaned Response:", cleaned);
-    return JSON.parse(cleaned);
-  } catch (error) {
-    console.error("Recommendations Error:", error);
-    return { error: "Failed to generate recommendations" };
   }
 }

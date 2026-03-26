@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { useNavigate } from 'react-router-dom';
-import { analyzeContract, suggestRecommendations } from './api/ai';
+import { analyzeContract } from './api/ai';
 
 const Home = () => {
   const [user, setUser] = useState(null);
@@ -11,9 +11,6 @@ const Home = () => {
   const [sector, setSector] = useState('General');
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
-  const [recommendationsResult, setRecommendationsResult] = useState(null);
-  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
-  const [recommendationsError, setRecommendationsError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,27 +34,11 @@ const Home = () => {
     }
     
     setAnalyzing(true);
-    setRecommendationsResult(null);
-    setRecommendationsError('');
     try {
       const result = await analyzeContract(contractText, sector);
       setAnalysisResult(result);
 
-      if (!result?.error) {
-        setRecommendationsLoading(true);
-        try {
-          const recs = await suggestRecommendations(contractText, result, sector);
-          setRecommendationsResult(recs);
-          if (recs?.error) {
-            setRecommendationsError(recs.error);
-          }
-        } catch (error) {
-          console.error('Recommendations error:', error);
-          setRecommendationsError('Failed to generate recommendations');
-        } finally {
-          setRecommendationsLoading(false);
-        }
-      }
+      
     } catch (error) {
       console.error('Analysis error:', error);
       setAnalysisResult({ error: 'Failed to analyze contract' });
@@ -279,53 +260,17 @@ const Home = () => {
             <p className="text-gray-700 leading-relaxed">{analysisResult.final_verdict}</p>
           </section>
 
-          {recommendationsLoading && (
-            <section className="notice-card mb-6">
-              <h3 className="font-bold text-gray-900 mb-2">Recommendations</h3>
-              <p className="text-gray-700">Generating tailored recommendations and alternatives...</p>
-            </section>
-          )}
+       
 
-          {recommendationsError && !recommendationsLoading && (
-            <section className="notice-card mb-6">
-              <h3 className="font-bold text-gray-900 mb-2">Recommendations</h3>
-              <p className="text-red-700">{recommendationsError}</p>
-            </section>
-          )}
+       
 
-          {recommendationsResult?.recommendations && recommendationsResult.recommendations.length > 0 && (
-            <section className="notice-card mb-6">
-              <h3 className="font-bold text-gray-900 mb-2">Recommendations</h3>
-              <ul className="list-disc list-inside space-y-2 text-gray-700">
-                {recommendationsResult.recommendations.map((item, index) => (
-                  <li key={index}>
-                    <strong className="text-gray-900">{item.title}:</strong> {item.why}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {recommendationsResult?.alternatives && recommendationsResult.alternatives.length > 0 && (
-            <section className="notice-card mb-6">
-              <h3 className="font-bold text-gray-900 mb-2">Alternatives</h3>
-              <ul className="list-disc list-inside space-y-2 text-gray-700">
-                {recommendationsResult.alternatives.map((item, index) => (
-                  <li key={index}>
-                    <strong className="text-gray-900">{item.option}:</strong> {item.why}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+         
 
           <div className="flex justify-end">
             <button
               className="btn-secondary"
               onClick={() => {
                 setAnalysisResult(null);
-                setRecommendationsResult(null);
-                setRecommendationsError('');
                 setContractText('');
               }}
             >
@@ -344,8 +289,6 @@ const Home = () => {
           <button
             onClick={() => {
               setAnalysisResult(null);
-              setRecommendationsResult(null);
-              setRecommendationsError('');
             }}
             className="btn-primary"
           >
