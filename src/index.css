@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --font-sans: 'Manrope', 'Helvetica Neue', 'Segoe UI', sans-serif;
+  --font-display: 'Manrope', 'Helvetica Neue', 'Segoe UI', sans-serif;
+
+  --bg: #f3efe8;
+  --surface: #ffffff;
+  --surface-muted: #f8f4ee;
+  --ink: #1d242d;
+  --muted: #5d6775;
+  --border: #e3ddd4;
+  --accent: #1f7a8c;
+  --accent-strong: #155f6d;
+  --accent-soft: #d9eef1;
+  --danger: #b64b3a;
+  --success: #2f7d55;
+  --warning: #b07a2a;
+
+  --shadow-sm: 0 8px 18px rgba(16, 24, 40, 0.08);
+  --shadow-md: 0 18px 35px rgba(16, 24, 40, 0.12);
+  --shadow-lg: 0 28px 60px rgba(16, 24, 40, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: radial-gradient(circle at top, #ffffff 0%, #f6f1ea 45%, #efe8dc 100%);
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  margin: 0;
+  color: var(--ink);
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+}
